@@ -1,10 +1,13 @@
 ================================================================
-ROBOT CAR PROJECT
+VISION CAR PROJECT
 Hotspot & Web Server Setup Guide
-Engineering 3 -- Raspberry Pi Unit
+Engineering 4 -- Raspberry Pi
 For Raspberry Pi OS Trixie (Debian 13)
 ================================================================
-
+This instructional guide was created by Mr. Love with the help of Claude AI
+Tested and run on a raspberry pi 4b, April 2026
+As you follow this guide, do not move forward until you have successfully completed each step and received confirmation
+================================================================
 OVERVIEW
 --------
 Raspberry Pi OS Trixie uses NetworkManager for all network
@@ -341,5 +344,5 @@ QUICK REFERENCE
   sudo systemctl restart robotcar             Restart server service
 
 ================================================================
-Engineering 3 -- Robot Car Project -- Raspberry Pi OS Trixie
+Engineering 4 -- Vision Car Project -- Raspberry Pi OS Trixie
 ================================================================
