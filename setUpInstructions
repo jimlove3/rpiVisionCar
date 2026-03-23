@@ -1,0 +1,341 @@
+================================================================
+ROBOT CAR PROJECT
+Hotspot & Web Server Setup Guide
+Engineering 3 -- Raspberry Pi Unit
+For Raspberry Pi OS Trixie (Debian 13)
+================================================================
+
+OVERVIEW
+--------
+Raspberry Pi OS Trixie uses NetworkManager for all network
+configuration. This replaces the older hostapd + dnsmasq + dhcpcd
+approach entirely. Setting up a hotspot on Trixie is significantly
+simpler -- it takes a handful of commands rather than editing
+multiple config files.
+
+  - Part 1: Create the WiFi hotspot using nmcli
+  - Part 2: Install Python dependencies and run the Flask server
+
+Estimated time: 15-25 minutes
+
+NOTE: To confirm you are running Trixie, run:
+        lsb_release -cs
+      It should print: trixie
+
+
+================================================================
+PREREQUISITES
+================================================================
+
+Before starting, confirm the following:
+
+  - Raspberry Pi 4B (or 3B+) running Raspberry Pi OS Trixie
+  - Pi Camera Module connected to the CSI ribbon port
+  - Internet access on the Pi for initial package installation
+    (use Ethernet or connect to WiFi temporarily)
+  - A laptop or phone with WiFi and a web browser
+  - SSH access to the Pi, or a keyboard and monitor attached
+
+
+================================================================
+PART 1 -- CREATE THE WIFI HOTSPOT
+================================================================
+
+On Trixie, NetworkManager handles the hotspot entirely. There are
+no config files to edit and no extra packages to install. The nmcli
+tool does everything in a few commands.
+
+WARNING: If you are connected to the Pi via SSH over WiFi, creating
+the hotspot will drop your SSH session -- the Pi's wlan0 interface
+switches roles. Connect via Ethernet or attach a keyboard and
+monitor before continuing.
+
+----------------------------------------------------------------
+Step 1 -- Create the hotspot connection
+----------------------------------------------------------------
+
+Run the following command on the Pi. Replace "RobotCar-Team1" with
+your chosen network name and "YourPassword" with a password of at
+least 8 characters.
+
+Each line ending with \ is a continuation of the same command:
+
+  sudo nmcli connection add \
+    con-name RobotCar-Team1 \
+    type wifi \
+    ifname wlan0 \
+    ssid RobotCar-Team1 \
+    802-11-wireless.mode ap \
+    802-11-wireless.band bg \
+    802-11-wireless.channel 6 \
+    wifi-sec.key-mgmt wpa-psk \
+    wifi-sec.psk YourPassword \
+    wifi-sec.proto rsn \
+    wifi-sec.pairwise ccmp \
+    ipv4.method shared \
+    ipv4.addresses 10.42.0.1/24 \
+    connection.autoconnect yes
+
+TIP: Each team should use a unique name (e.g. RobotCar-Team1,
+RobotCar-Team2) so hotspots do not conflict in the classroom.
+Use different channels too -- 1, 6, and 11 are the three
+non-overlapping 2.4 GHz channels.
+
+----------------------------------------------------------------
+Step 2 -- Activate the hotspot
+----------------------------------------------------------------
+
+  sudo nmcli connection up RobotCar-Team1
+
+The Pi's WiFi will now broadcast the hotspot. On your laptop or
+phone, look for the network name you chose in the WiFi list and
+connect using the password you set.
+
+----------------------------------------------------------------
+Step 3 -- Verify the hotspot is working
+----------------------------------------------------------------
+
+On the Pi, confirm the hotspot is active:
+
+  nmcli device status
+
+You should see wlan0 listed with type "wifi" and state "connected".
+
+On the connected laptop, open a browser and go to:
+
+  http://10.42.0.1
+
+You will see a connection error at this point -- that is expected,
+because the Flask server has not been started yet. If you cannot
+connect to the WiFi network at all, see the Troubleshooting section.
+
+----------------------------------------------------------------
+Auto-start on boot
+----------------------------------------------------------------
+
+The "connection.autoconnect yes" flag in Step 1 is all that is
+needed -- the hotspot starts automatically on every boot.
+
+To confirm autoconnect is enabled:
+
+  nmcli connection show RobotCar-Team1 | grep autoconnect
+
+You should see:   connection.autoconnect: yes
+
+----------------------------------------------------------------
+Hotspot settings summary
+----------------------------------------------------------------
+
+  Pi IP address  :  10.42.0.1
+  DHCP range     :  10.42.0.2 - 10.42.0.254 (assigned by NM)
+  Subnet mask    :  255.255.255.0
+  WiFi band      :  2.4 GHz (802.11b/g), channel 6
+  Security       :  WPA2-PSK (RSN/CCMP)
+  Auto-start     :  Yes -- starts on every boot
+
+
+================================================================
+PART 2 -- INSTALL DEPENDENCIES & START THE SERVER
+================================================================
+
+----------------------------------------------------------------
+Step 1 -- Install Python packages
+----------------------------------------------------------------
+
+The Pi needs internet access for this step. If the hotspot is
+already active and there is no Ethernet connection, temporarily
+switch back to a WiFi network:
+
+  sudo nmcli connection down RobotCar-Team1
+  sudo nmcli device wifi connect YourSchoolWiFi password YourWiFiPassword
+
+Then install the required packages:
+
+  sudo apt update
+  sudo apt install -y python3-pip python3-picamera2 python3-flask
+
+If python3-flask is not available via apt, install it with pip:
+
+  sudo pip3 install flask --break-system-packages
+
+NOTE: On Trixie, picamera2 must be installed via apt, not pip.
+The apt version is built with the correct system-level libcamera
+bindings. Using pip can cause compatibility problems.
+
+----------------------------------------------------------------
+Step 2 -- Enable the camera interface
+----------------------------------------------------------------
+
+If the camera has not been enabled yet:
+
+  sudo raspi-config
+
+Go to: Interface Options > Camera > Enable. Reboot if prompted.
+
+To quickly test the camera from the terminal:
+
+  libcamera-hello --timeout 2000
+
+This should display a brief camera preview. If it errors, check
+the ribbon cable connection.
+
+----------------------------------------------------------------
+Step 3 -- Copy the server file to the Pi
+----------------------------------------------------------------
+
+If transferring from a laptop on the same network
+(replace "pi" with your username if different):
+
+  scp robot_car_server.py pi@10.42.0.1:~/robot_car_server.py
+
+Or create it directly on the Pi:
+
+  nano ~/robot_car_server.py
+
+----------------------------------------------------------------
+Step 4 -- Restart the hotspot
+----------------------------------------------------------------
+
+If you switched to school WiFi for package installation,
+bring the hotspot back:
+
+  sudo nmcli connection up RobotCar-Team1
+
+----------------------------------------------------------------
+Step 5 -- Start the web server
+----------------------------------------------------------------
+
+The server uses port 80 (standard HTTP), so sudo is required:
+
+  sudo python3 ~/robot_car_server.py
+
+You should see:
+
+  ==================================================
+    Robot Car Server starting...
+    GPIO:   enabled
+    Camera: enabled
+    Open your browser to: http://10.42.0.1
+  ==================================================
+
+On the connected laptop, navigate to http://10.42.0.1. The control
+page will load with the live camera feed and D-pad controls.
+
+----------------------------------------------------------------
+Step 6 -- Auto-start the server on boot (optional)
+----------------------------------------------------------------
+
+Create a systemd service so the server starts automatically
+when the Pi powers on:
+
+  sudo nano /etc/systemd/system/robotcar.service
+
+Paste the following (replace "pi" with your username if different):
+
+  [Unit]
+  Description=Robot Car Web Server
+  After=network.target
+
+  [Service]
+  ExecStart=/usr/bin/python3 /home/pi/robot_car_server.py
+  WorkingDirectory=/home/pi
+  Restart=always
+  User=root
+
+  [Install]
+  WantedBy=multi-user.target
+
+Enable and start it:
+
+  sudo systemctl enable robotcar
+  sudo systemctl start robotcar
+
+
+================================================================
+USING THE WEB CONTROLLER
+================================================================
+
+Connect a laptop or phone to the Pi's hotspot, then open a browser
+and go to http://10.42.0.1.
+
+  Arrow Up / ^ button    Drive forward
+  Arrow Down / v button  Drive backward
+  Arrow Left / < button  Spin left
+  Arrow Right / > button Spin right
+  Spacebar / Stop button Stop immediately
+  Speed slider           Adjust motor speed (20-100%)
+
+NOTE: Hold a button or key to drive -- the car stops automatically
+when you release it. The speed slider controls the PWM duty cycle
+sent to the motor driver.
+
+
+================================================================
+TROUBLESHOOTING
+================================================================
+
+Hotspot not visible in WiFi list
+  - Check the connection is active:
+      nmcli connection show --active
+  - Try bringing it up manually:
+      sudo nmcli connection up RobotCar-Team1
+  - Check for errors:
+      sudo journalctl -u NetworkManager --since '5 min ago'
+  - Make sure no other process is using wlan0:
+      nmcli device status
+
+Cannot reach 10.42.0.1 from laptop
+  - Confirm you are connected to the Pi's hotspot, not school WiFi
+  - The Flask server must be running:
+      sudo python3 ~/robot_car_server.py
+  - Confirm the Pi's IP:
+      ip addr show wlan0  (look for 10.42.0.1)
+
+Camera feed not showing
+  - Check the ribbon cable is seated firmly in both the Pi CSI
+    port and the camera module
+  - Test with:
+      libcamera-hello --timeout 2000
+  - Confirm picamera2 is installed:
+      python3 -c "import picamera2; print('OK')"
+  - List detected cameras:
+      libcamera-still --list-cameras
+
+Motors not moving
+  - Verify wiring against the GPIO pin numbers at the top of
+    robot_car_server.py
+  - The motor driver needs its own power supply (battery pack),
+    not just the Pi's 5V rail
+  - The ENA and ENB jumpers on the L298N must be removed so the
+    Pi's PWM pins control motor speed
+  - Quick test: run python3 and manually set a GPIO pin HIGH to
+    confirm the motor responds
+
+SSH dropped when hotspot was activated
+  - This is expected -- wlan0 changes role from client to AP
+  - Reconnect via Ethernet, or attach a keyboard and monitor
+  - Next time, activate the hotspot from a local terminal session,
+    not SSH over WiFi
+
+Server error: Address already in use
+  - Another process is using port 80. Find and stop it:
+      sudo lsof -i :80
+      sudo kill <PID shown above>
+
+
+================================================================
+QUICK REFERENCE
+================================================================
+
+  nmcli connection show --active              List active connections
+  sudo nmcli connection up RobotCar-Team1     Start the hotspot
+  sudo nmcli connection down RobotCar-Team1   Stop the hotspot
+  ip addr show wlan0                          Show Pi IP address
+  libcamera-still --list-cameras              List detected cameras
+  sudo python3 ~/robot_car_server.py          Start server manually
+  sudo systemctl status robotcar              Check auto-start service
+  sudo systemctl restart robotcar             Restart server service
+
+================================================================
+Engineering 3 -- Robot Car Project -- Raspberry Pi OS Trixie
+================================================================
