@@ -343,6 +343,17 @@ QUICK REFERENCE
   sudo systemctl status robotcar              Check auto-start service
   sudo systemctl restart robotcar             Restart server service
 
+To change the name of your server:
+Run this on the Pi, replacing NewName with whatever you want:
+sudo nmcli connection modify RobotCar-Team1 ssid NewName con-name NewName
+
+Then restart the hotspot to apply it:
+sudo nmcli connection down RobotCar-Team1
+sudo nmcli connection up NewName
+
+The above quick reference commands will change based on the new server name
+
+
 ================================================================
 Engineering 4 -- Vision Car Project -- Raspberry Pi OS Trixie
 ================================================================
