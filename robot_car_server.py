@@ -209,7 +209,7 @@ HTML_PAGE = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Robot Car Controller</title>
+  <title>MHS Vision Car Controller</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -300,7 +300,7 @@ HTML_PAGE = """<!DOCTYPE html>
   </style>
 </head>
 <body>
-  <h1>🤖 Robot Car Controller</h1>
+  <h1>MHS Vision Car Controller</h1>
 
   <div id="video-container">
     {% if camera_available %}
