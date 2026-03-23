@@ -174,10 +174,14 @@ Go to: Interface Options > Camera > Enable. Reboot if prompted.
 
 To quickly test the camera from the terminal:
 
-  libcamera-hello --timeout 2000
+  rpicam-hello --timeout 2000
 
 This should display a brief camera preview. If it errors, check
 the ribbon cable connection.
+
+NOTE: On Trixie the camera commands were renamed from libcamera-*
+to rpicam-*. Use rpicam-hello, rpicam-still, etc. -- the old
+libcamera-hello command will give "command not found".
 
 ----------------------------------------------------------------
 Step 3 -- Copy the server file to the Pi
@@ -295,11 +299,11 @@ Camera feed not showing
   - Check the ribbon cable is seated firmly in both the Pi CSI
     port and the camera module
   - Test with:
-      libcamera-hello --timeout 2000
+      rpicam-hello --timeout 2000
   - Confirm picamera2 is installed:
       python3 -c "import picamera2; print('OK')"
   - List detected cameras:
-      libcamera-still --list-cameras
+      rpicam-still --list-cameras
 
 Motors not moving
   - Verify wiring against the GPIO pin numbers at the top of
@@ -331,7 +335,7 @@ QUICK REFERENCE
   sudo nmcli connection up RobotCar-Team1     Start the hotspot
   sudo nmcli connection down RobotCar-Team1   Stop the hotspot
   ip addr show wlan0                          Show Pi IP address
-  libcamera-still --list-cameras              List detected cameras
+  rpicam-still --list-cameras              List detected cameras
   sudo python3 ~/robot_car_server.py          Start server manually
   sudo systemctl status robotcar              Check auto-start service
   sudo systemctl restart robotcar             Restart server service
