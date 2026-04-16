@@ -1,0 +1,27 @@
+Instructions for inverting the video feed.
+Use this set of instructions if your video is upside down because of the way you mounted the camera
+
+Find this code in the camera.__init__ section
+
+config = self.camera.create_video_configuration(
+    main={"size": (640, 480)},
+    controls={"FrameRate": 30}
+)
+
+Change it to this:
+
+from libcamera import Transform
+
+config = self.camera.create_video_configuration(
+    main={"size": (640, 480)},
+    controls={"FrameRate": 30},
+    transform=Transform(hflip=1, vflip=1)
+)
+
+Explanation:
+vflip=1 flips vertically, hflip=1 flips horizontally. Both together gives you a 180° rotation,
+which is what you need when the camera is mounted upside down. If the image is mirrored but
+the right way up, use just vflip=1 on its own.
+
+The Transform import needs to go at the top of the file with the other imports, or you can put
+it inline just above the config line — either works.
